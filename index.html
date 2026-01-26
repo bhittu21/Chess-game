@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30 Player Tournament - Logic Flow</title>
+    <style>
+        :root {
+            --match-height: 110px;
+            --match-width: 250px;
+            --r1-gap: 20px;
+            --accent: #2563eb;
+            --border: #cbd5e1;
+            --header-bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f1f5f9;
+            padding: 40px;
+            margin: 0;
+            overflow-x: auto;
+        }
+
+        .bracket-wrapper {
+            display: flex;
+            align-items: flex-start;
+            padding-bottom: 50px;
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            width: var(--match-width);
+            margin-right: 60px;
+            position: relative;
+        }
+
+        /* Symmetric Spacing Calculations */
+        .round-1 .match { margin-bottom: var(--r1-gap); }
+        .round-2 { margin-top: calc((var(--match-height) + var(--r1-gap)) / 2 - (var(--r1-gap) / 2)); }
+        .round-2 .match { margin-bottom: calc(var(--match-height) + (var(--r1-gap) * 2)); }
+        .round-3 { margin-top: calc(var(--match-height) + var(--r1-gap) * 1.5); }
+        .round-3 .match { margin-bottom: calc(var(--match-height) * 3 + var(--r1-gap) * 4); }
+        .round-4 { margin-top: calc(var(--match-height) * 3 + var(--r1-gap) * 3.5); }
+        .round-4 .match { margin-bottom: calc(var(--match-height) * 7 + var(--r1-gap) * 8); }
+        .round-5 { margin-top: calc(var(--match-height) * 7 + var(--r1-gap) * 7.5); }
+
+        .match {
+            height: var(--match-height);
+            width: 100%;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .match::after {
+            content: "";
+            position: absolute;
+            right: -60px;
+            top: 50%;
+            width: 60px;
+            height: 2px;
+            background: #cbd5e1;
+        }
+        .round-5 .match::after { display: none; }
+
+        .match-header {
+            font-size: 10px;
+            font-weight: bold;
+            color: #475569;
+            padding: 6px 10px;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border);
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .time-tag { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; color: #1e293b; }
+
+        .slot {
+            flex: 1;
+            padding: 4px 10px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .slot.winner-active { background: #eff6ff; color: var(--accent); font-weight: 600; }
+
+        select {
+            font-size: 11px;
+            border: none;
+            background: #f8fafc;
+            padding: 5px;
+            width: 100%;
+            cursor: pointer;
+            border-top: 1px solid var(--border);
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .best-loser-dropdown { background-color: #fffbeb !important; color: #92400e; font-weight: bold; border: 1px dashed #f59e0b; }
+
+        .champ-card {
+            margin-top: 40px;
+            text-align: center;
+            border: 3px double #fbbf24;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align: center; color: #1e293b;">Tournament Bracket</h2>
+    <p style="text-align: center; color: #64748b; margin-bottom: 30px;">Round-based scheduling | 3 Simultaneous | 30m Intervals</p>
+
+    <div class="bracket-wrapper">
+        <div class="round round-1" id="r1"></div>
+        <div class="round round-2" id="r2"></div>
+        <div class="round round-3" id="r3"></div>
+        <div class="round round-4" id="r4"></div>
+        <div class="round round-5" id="r5">
+            <div id="final-box"></div>
+            <div class="champ-card">
+                <div style="font-size: 40px;">🏆</div>
+                <div id="winner-name" style="font-weight: 900; color: #b45309; margin-top: 10px;">CHAMPION PENDING</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const playerSeedings = [
+        ["MD. Riad Chowdhury", "Mohammed Arif"], ["Neeladri Karmaker Probal", "Nataraj Debnath Niloy"],
+        ["Shoumo Shahriar Araf", "Shankhodeep Chowdhury"], ["Tahminul Haque Touhid", "Shankhodeep Chowdhury"],
+        ["Emon Thakur", "Fardeen Ahmed"], ["Sayed Al Mamun", "Farhan Israk Shuvon"],
+        ["Omio Mahim", "Nayeem Miah"], ["Bipul Singha", "Emad Uddin Adil"],
+        ["Mehedi Hasan Sadi", "Sayem Ahmed Shayeed"], ["Lazim Khandakar", "Md Fahmid Zahid Khan"],
+        ["Tanjim Ahmed", "Sayed Munim Shahriar Samee"], ["Mahbub Muhon", "Mahin Alam"],
+        ["Arif Hasan", "Ahmed Uz Zaman"], ["Sourav Mohon Biswas", "Tanjimul Yousuf Ishmam"],
+        ["Jalal Uddin Chowdhury", "MD Mizanur Rahman"]
+    ];
+
+    const allPlayersFlat = playerSeedings.flat();
+    let currentStartTime = new Date(2026, 0, 27, 10, 0); // Jan 27, 10:00 AM
+
+    function getRoundTimes(matchCount) {
+        let times = [];
+        let tempTime = new Date(currentStartTime);
+        for(let i = 0; i < matchCount; i++) {
+            if (i > 0 && i % 3 === 0) tempTime.setMinutes(tempTime.getMinutes() + 30);
+            times.push(new Date(tempTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }));
+        }
+        // Set the start time for the NEXT round to be 30 mins after the last match of THIS round
+        currentStartTime = new Date(tempTime);
+        currentStartTime.setMinutes(currentStartTime.getMinutes() + 30);
+        return times;
+    }
+
+    function createMatchHTML(round, matchNum, label, time, p1, p2, isWildcard = false) {
+        const p2Content = isWildcard ? 
+            `<select class="best-loser-dropdown" onchange="handleBestLoser(this.value)">
+                <option value="">Best Loser</option>
+                ${allPlayersFlat.map(p => `<option value="${p}">${p}</option>`).join('')}
+            </select>` : p2;
+
+        return `
+            <div class="match">
+                <div class="match-header">
+                    <span>${label}-${matchNum}</span>
+                    <span class="time-tag">27 Jan, ${time}</span>
+                </div>
+                <div class="slot" id="r${round}-m${matchNum}-p1">${p1}</div>
+                <div class="slot" id="r${round}-m${matchNum}-p2">${p2Content}</div>
+                <select id="win-r${round}-m${matchNum}" onchange="advance(${round}, ${matchNum}, this.value)">
+                    <option value="">Select Winner</option>
+                    <option value="${p1}">${p1}</option>
+                    ${!isWildcard ? `<option value="${p2}">${p2}</option>` : ''}
+                </select>
+            </div>`;
+    }
+
+    // Generate Round 1 (R1)
+    const r1Times = getRoundTimes(15);
+    const r1 = document.getElementById('r1');
+    playerSeedings.forEach((p, i) => r1.innerHTML += createMatchHTML(1, i+1, "R1", r1Times[i], p[0], p[1]));
+
+    // Generate Round 2 (R16)
+    const r2Times = getRoundTimes(8);
+    const r2 = document.getElementById('r2');
+    for(let i=1; i<=8; i++) r2.innerHTML += createMatchHTML(2, i, "R16", r2Times[i-1], "Waiting...", "Waiting...", i === 8);
+
+    // Generate Round 3 (QF)
+    const r3Times = getRoundTimes(4);
+    const r3 = document.getElementById('r3');
+    for(let i=1; i<=4; i++) r3.innerHTML += createMatchHTML(3, i, "QF", r3Times[i-1], "Waiting...", "Waiting...");
+
+    // Generate Round 4 (SF)
+    const r4Times = getRoundTimes(2);
+    const r4 = document.getElementById('r4');
+    for(let i=1; i<=2; i++) r4.innerHTML += createMatchHTML(4, i, "SF", r4Times[i-1], "Waiting...", "Waiting...");
+
+    // Generate Final
+    const r5Times = getRoundTimes(1);
+    document.getElementById('final-box').innerHTML = createMatchHTML(5, 1, "FINAL", r5Times[0], "Finalist 1", "Finalist 2");
+
+    function handleBestLoser(val) {
+        if(!val) return;
+        const target = document.getElementById('r2-m8-p2');
+        target.innerText = val;
+        target.classList.add('winner-active');
+        refreshDropdown(2, 8);
+    }
+
+    function advance(r, m, winner) {
+        if(!winner || winner.includes("Waiting")) return;
+        if(r === 5) { document.getElementById('winner-name').innerText = winner; return; }
+        let nextR = r + 1, nextM, nextP;
+        if (r === 1 && m === 15) { nextM = 8; nextP = 1; }
+        else { nextM = Math.ceil(m / 2); nextP = (m % 2 !== 0) ? 1 : 2; }
+        const targetSlot = document.getElementById(`r${nextR}-m${nextM}-p${nextP}`);
+        if(targetSlot) { targetSlot.innerText = winner; targetSlot.classList.add('winner-active'); refreshDropdown(nextR, nextM); }
+    }
+
+    function refreshDropdown(r, m) {
+        const p1 = document.getElementById(`r${r}-m${m}-p1`).innerText;
+        const p2 = document.getElementById(`r${r}-m${m}-p2`).innerText;
+        const sel = document.getElementById(`win-r${r}-m${m}`);
+        if(sel) sel.innerHTML = `<option value="">Select Winner</option><option value="${p1}">${p1}</option><option value="${p2}">${p2}</option>`;
+    }
+</script>
+</body>
+</html>
