@@ -3,40 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>30 Player Tournament - Logic Flow</title>
+    <title>30 Player Tournament - Galaxy Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --match-height: 110px;
-            --match-width: 250px;
+            --match-width: 260px; /* Slightly wider for better breathing room */
             --r1-gap: 20px;
-            --accent: #2563eb;
-            --border: #cbd5e1;
-            --header-bg: #f8fafc;
+            
+            /* Galaxy Palette */
+            --bg-deep: #050b14;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-highlight: rgba(255, 255, 255, 0.08);
+            
+            --accent-cyan: #22d3ee;
+            --accent-purple: #a855f7;
+            --accent-gold: #fbbf24;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #f1f5f9;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-deep);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
             padding: 40px;
             margin: 0;
             overflow-x: auto;
+            min-height: 100vh;
         }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-purple); }
+
+        h2 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            margin-bottom: 5px;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+
+        p { color: var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px; }
 
         .bracket-wrapper {
             display: flex;
             align-items: flex-start;
             padding-bottom: 50px;
+            padding-top: 20px;
         }
 
         .round {
             display: flex;
             flex-direction: column;
             width: var(--match-width);
-            margin-right: 60px;
+            margin-right: 80px; /* More space for connectors */
             position: relative;
         }
 
-        /* Symmetric Spacing Calculations */
+        /* Logic Spacing - Kept identical to your formula */
         .round-1 .match { margin-bottom: var(--r1-gap); }
         .round-2 { margin-top: calc((var(--match-height) + var(--r1-gap)) / 2 - (var(--r1-gap) / 2)); }
         .round-2 .match { margin-bottom: calc(var(--match-height) + (var(--r1-gap) * 2)); }
@@ -49,81 +85,164 @@
         .match {
             height: var(--match-height);
             width: 100%;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            /* Glassmorphism */
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
             position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
+        .match:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* Connector Lines */
         .match::after {
             content: "";
             position: absolute;
-            right: -60px;
+            right: -80px; /* Matches round margin */
             top: 50%;
-            width: 60px;
-            height: 2px;
-            background: #cbd5e1;
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--glass-border), transparent);
         }
         .round-5 .match::after { display: none; }
 
         .match-header {
             font-size: 10px;
-            font-weight: bold;
-            color: #475569;
-            padding: 6px 10px;
-            background: var(--header-bg);
-            border-bottom: 1px solid var(--border);
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--glass-border);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
-        .time-tag { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; color: #1e293b; }
+        .time-tag { 
+            background: rgba(34, 211, 238, 0.1); 
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            color: var(--accent-cyan); 
+            font-size: 9px;
+        }
 
         .slot {
             flex: 1;
-            padding: 4px 10px;
-            font-size: 12px;
+            padding: 4px 12px;
+            font-size: 13px;
             display: flex;
             align-items: center;
             overflow: hidden;
-            background: #fff;
+            background: transparent;
+            color: var(--text-main);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            white-space: nowrap;
         }
 
-        .slot.winner-active { background: #eff6ff; color: var(--accent); font-weight: 600; }
+        .slot:last-of-type { border-bottom: none; }
+
+        .slot.winner-active { 
+            background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), transparent);
+            color: var(--accent-cyan); 
+            font-weight: 600; 
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+            border-left: 3px solid var(--accent-cyan);
+        }
 
         select {
+            font-family: 'Outfit', sans-serif;
             font-size: 11px;
             border: none;
-            background: #f8fafc;
-            padding: 5px;
+            background: rgba(0,0,0,0.4);
+            color: var(--text-muted);
+            padding: 8px;
             width: 100%;
             cursor: pointer;
-            border-top: 1px solid var(--border);
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
+            border-top: 1px solid var(--glass-border);
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            outline: none;
+            transition: color 0.2s;
         }
 
-        .best-loser-dropdown { background-color: #fffbeb !important; color: #92400e; font-weight: bold; border: 1px dashed #f59e0b; }
+        select:hover { color: var(--text-main); background: rgba(0,0,0,0.6); }
+
+        /* The drop down inside a slot */
+        .slot select.best-loser-dropdown {
+            background-color: rgba(251, 191, 36, 0.1) !important;
+            color: var(--accent-gold);
+            font-weight: bold;
+            border: 1px dashed var(--accent-gold);
+            border-radius: 4px;
+            padding: 4px;
+            margin: -4px 0; /* Align fix */
+        }
+        
+        .slot select.best-loser-dropdown option {
+            background: #1e1b4b;
+            color: white;
+        }
+
+        option { background: #0f172a; color: white; padding: 10px; }
 
         .champ-card {
             margin-top: 40px;
             text-align: center;
-            border: 3px double #fbbf24;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
+            border: 1px solid var(--accent-gold);
+            padding: 30px;
+            background: linear-gradient(145deg, rgba(251, 191, 36, 0.05), transparent);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.1), inset 0 0 20px rgba(251, 191, 36, 0.05);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle shine animation on champ card */
+        .champ-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 60%);
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #winner-name {
+            position: relative;
+            z-index: 1;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
         }
     </style>
 </head>
 <body>
 
-    <h2 style="text-align: center; color: #1e293b;">Tournament Bracket</h2>
-    <p style="text-align: center; color: #64748b; margin-bottom: 30px;">Round-based scheduling | 3 Simultaneous | 30m Intervals</p>
+    <h2 style="text-align: center;">Tournament Bracket</h2>
+    <p style="text-align: center; margin-bottom: 40px;">Round-based scheduling • 3 Simultaneous • 30m Intervals</p>
 
     <div class="bracket-wrapper">
         <div class="round round-1" id="r1"></div>
@@ -133,8 +252,8 @@
         <div class="round round-5" id="r5">
             <div id="final-box"></div>
             <div class="champ-card">
-                <div style="font-size: 40px;">🏆</div>
-                <div id="winner-name" style="font-weight: 900; color: #b45309; margin-top: 10px;">CHAMPION PENDING</div>
+                <div style="font-size: 40px; position: relative; z-index: 1;">🏆</div>
+                <div id="winner-name" style="font-weight: 900; margin-top: 10px;">CHAMPION PENDING</div>
             </div>
         </div>
     </div>
@@ -177,7 +296,7 @@
         return `
             <div class="match">
                 <div class="match-header">
-                    <span>${label}-${matchNum}</span>
+                    <span>${label} • Match ${matchNum}</span>
                     <span class="time-tag">27 Jan, ${time}</span>
                 </div>
                 <div class="slot" id="r${round}-m${matchNum}-p1">${p1}</div>
